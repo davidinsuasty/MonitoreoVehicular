@@ -148,7 +148,7 @@ int main(void) {
                 blobs.push_back(currentFrameBlobs[i]);
             }
 		}
-        }else {
+        else {
             matchCurrentFrameBlobsToExistingBlobs(blobs, currentFrameBlobs);
         }
 

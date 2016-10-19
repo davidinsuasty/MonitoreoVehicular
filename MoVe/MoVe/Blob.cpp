@@ -16,7 +16,7 @@ Blob::Blob(std::vector<cv::Point> _contour) {
 
     centerPositions.push_back(currentCenter);
 
-    dblCurrentDiagonalSize = sqrt(pow(currentBoundingRect.width, 2) + pow(currentBoundingRect.height, 2));
+	dblCurrentDiagonalSize = sqrt(pow((float)currentBoundingRect.width, 2) + pow((float)currentBoundingRect.height, 2));
 
     dblCurrentAspectRatio = (float)currentBoundingRect.width / (float)currentBoundingRect.height;
 
@@ -51,12 +51,12 @@ void Blob::predictNextPosition(void) {
         int sumOfXChanges = ((centerPositions[2].x - centerPositions[1].x) * 2) +
             ((centerPositions[1].x - centerPositions[0].x) * 1);
 
-        int deltaX = (int)std::round((float)sumOfXChanges / 3.0);
+        int deltaX = (int)std::floor(((float)sumOfXChanges / 3.0) + 0.5);
 
         int sumOfYChanges = ((centerPositions[2].y - centerPositions[1].y) * 2) +
             ((centerPositions[1].y - centerPositions[0].y) * 1);
 
-        int deltaY = (int)std::round((float)sumOfYChanges / 3.0);
+        int deltaY = (int)std::floor(((float)sumOfYChanges / 3.0) + 0.5);
 
         predictedNextPosition.x = centerPositions.back().x + deltaX;
         predictedNextPosition.y = centerPositions.back().y + deltaY;
@@ -68,13 +68,13 @@ void Blob::predictNextPosition(void) {
             ((centerPositions[2].x - centerPositions[1].x) * 2) +
             ((centerPositions[1].x - centerPositions[0].x) * 1);
 
-        int deltaX = (int)std::round((float)sumOfXChanges / 6.0);
+        int deltaX = (int)std::floor(((float)sumOfXChanges / 6.0) + 0.5);
 
         int sumOfYChanges = ((centerPositions[3].y - centerPositions[2].y) * 3) +
             ((centerPositions[2].y - centerPositions[1].y) * 2) +
             ((centerPositions[1].y - centerPositions[0].y) * 1);
 
-        int deltaY = (int)std::round((float)sumOfYChanges / 6.0);
+        int deltaY = (int)std::floor(((float)sumOfYChanges / 6.0) + 0.5);
 
         predictedNextPosition.x = centerPositions.back().x + deltaX;
         predictedNextPosition.y = centerPositions.back().y + deltaY;
@@ -87,14 +87,14 @@ void Blob::predictNextPosition(void) {
             ((centerPositions[numPositions - 3].x - centerPositions[numPositions - 4].x) * 2) +
             ((centerPositions[numPositions - 4].x - centerPositions[numPositions - 5].x) * 1);
 
-        int deltaX = (int)std::round((float)sumOfXChanges / 10.0);
+        int deltaX = (int)std::floor(((float)sumOfXChanges / 10.0) + 0.5);
 
         int sumOfYChanges = ((centerPositions[numPositions - 1].y - centerPositions[numPositions - 2].y) * 4) +
             ((centerPositions[numPositions - 2].y - centerPositions[numPositions - 3].y) * 3) +
             ((centerPositions[numPositions - 3].y - centerPositions[numPositions - 4].y) * 2) +
             ((centerPositions[numPositions - 4].y - centerPositions[numPositions - 5].y) * 1);
 
-        int deltaY = (int)std::round((float)sumOfYChanges / 10.0);
+        int deltaY = (int)std::floor(((float)sumOfYChanges / 10.0) + 0.5);
 
         predictedNextPosition.x = centerPositions.back().x + deltaX;
         predictedNextPosition.y = centerPositions.back().y + deltaY;
@@ -105,7 +105,3 @@ void Blob::predictNextPosition(void) {
     }
 
 }
-
-
-
-
