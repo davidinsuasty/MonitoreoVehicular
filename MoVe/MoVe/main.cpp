@@ -1,13 +1,9 @@
-// main.cpp
-
-#include<opencv2/core/core.hpp>
-#include<opencv2/highgui/highgui.hpp>
-#include<opencv2/imgproc/imgproc.hpp>
-
+#include <opencv2\core\core.hpp>
+#include <opencv2\highgui\highgui.hpp>
+#include <opencv2\imgproc\imgproc.hpp>
 #include <iostream>
-#include <stdlib.h>
-#include <math.h>
-#include <conio.h>           // it may be necessary to change or remove this line if not using Windows
+#include <string>
+#include<conio.h>           // it may be necessary to change or remove this line if not using Windows
 
 #include "Blob.h"
 
@@ -30,12 +26,45 @@ void drawAndShowContours(cv::Size imageSize, std::vector<Blob> blobs, std::strin
 bool checkIfBlobsCrossedTheLine(std::vector<Blob> &blobs, int &intHorizontalLinePosition, int &carCount);
 void drawBlobInfoOnImage(std::vector<Blob> &blobs, cv::Mat &imgFrame2Copy);
 void drawCarCountOnImage(int &carCount, cv::Mat &imgFrame2Copy);
+double round(double number);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-int main(void) {
+int main( int argc, char** argv){
 
-    cv::VideoCapture capVideo;
+	if(argc<2)
+	{
+		std::cout<<
+			" Usage: main.exe <video_name.avi>\n"
+		  <<"	     main.exe <camera port = (0,1,2,..)>"
+		  << std::endl;
+		return 0;
+	}
 
+	// set tracking algorithm : default --MEDIANFLOW--
+	//MIL - BOOSTING - MEDIANFLOW - TLD - KCF
+	if (argc < 3)
+		std::string trackingAlg = "MEDIANFLOW";
+	else
+		std::string trackingAlg = argv[2];
+
+	// set input video
+	std::string video = argv[1];
+	cv::VideoCapture capVideo(video);
+	if(!capVideo.isOpened())  // check if we succeeded
+	{
+	  std::cout<< "ERROR: video file "<< video << " is not found! " << std::endl << std::endl;
+	  _getch();
+	  return(0);
+	}
+
+	if (capVideo.get(CV_CAP_PROP_FRAME_COUNT) < 2) 
+	{
+        std::cout << "error: video file must have at least two frames";
+        _getch();                   // it may be necessary to change or remove this line if not using Windows
+        return(0);
+    }
+
+    
     cv::Mat imgFrame1;
     cv::Mat imgFrame2;
 
@@ -43,26 +72,13 @@ int main(void) {
 
     cv::Point crossingLine[2];
 
-    int carCount = 0;
-
-    capVideo.open("CarsDrivingUnderBridge.mp4");
-
-    if (!capVideo.isOpened()) {                                                 // if unable to open video file
-        std::cout << "error reading video file" << std::endl << std::endl;      // show error message
-        _getch();                   // it may be necessary to change or remove this line if not using Windows
-        return(0);                                                              // and exit program
-    }
-
-    if (capVideo.get(CV_CAP_PROP_FRAME_COUNT) < 2) {
-        std::cout << "error: video file must have at least two frames";
-        _getch();                   // it may be necessary to change or remove this line if not using Windows
-        return(0);
-    }
+    int carCount = 0;  // counting cars
 
     capVideo.read(imgFrame1);
     capVideo.read(imgFrame2);
-	
-    int intHorizontalLinePosition = (int)ceil((double)imgFrame1.rows * 0.35);
+
+	// horizontal line position for counting cars
+    int intHorizontalLinePosition = (int)round((double)imgFrame1.rows * 0.35);
 
     crossingLine[0].x = 0;
     crossingLine[0].y = intHorizontalLinePosition;
@@ -96,7 +112,7 @@ int main(void) {
 
         cv::threshold(imgDifference, imgThresh, 30, 255.0, CV_THRESH_BINARY);
 
-        cv::imshow("imgThresh", imgThresh);
+        ////////// cv::imshow("imgThresh", imgThresh);
 
         cv::Mat structuringElement3x3 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
         cv::Mat structuringElement5x5 = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
@@ -125,10 +141,11 @@ int main(void) {
 
         drawAndShowContours(imgThresh.size(), convexHulls, "imgConvexHulls");
 
-        //for (auto &convexHull : convexHulls) {
-		for (int i = 0; convexHulls.size()-1;i++){
+        //for (auto &convexHull : convexHulls) 
+		for ( unsigned int i = 0; i < convexHulls.size(); i++)
+		{
+            //Blob possibleBlob(convexHull);
 			Blob possibleBlob(convexHulls[i]);
-
             if (possibleBlob.currentBoundingRect.area() > 400 &&
                 possibleBlob.dblCurrentAspectRatio > 0.2 &&
                 possibleBlob.dblCurrentAspectRatio < 4.0 &&
@@ -143,12 +160,11 @@ int main(void) {
         drawAndShowContours(imgThresh.size(), currentFrameBlobs, "imgCurrentFrameBlobs");
 
         if (blnFirstFrame == true) {
-            //for (auto &currentFrameBlob : currentFrameBlobs) {
-			for (int i= 0; i<currentFrameBlobs.size();i++){
+			for (unsigned int i = 0; i<currentFrameBlobs.size(); i++)
+			{
                 blobs.push_back(currentFrameBlobs[i]);
             }
-		}
-        else {
+        } else {
             matchCurrentFrameBlobsToExistingBlobs(blobs, currentFrameBlobs);
         }
 
@@ -169,9 +185,9 @@ int main(void) {
 
         drawCarCountOnImage(carCount, imgFrame2Copy);
 
-        cv::imshow("imgFrame2Copy", imgFrame2Copy);
-
-        //cv::waitKey(0);                 // uncomment this line to go frame by frame for debugging
+		cv::imshow("imgFrame2Copy", imgFrame2Copy);
+		//cv::imshow("video de entrada",imgFrame2);
+        cv::waitKey(10);                 // uncomment this line to go frame by frame for debugging
         
                 // now we prepare for the next iteration
 
@@ -203,15 +219,16 @@ int main(void) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void matchCurrentFrameBlobsToExistingBlobs(std::vector<Blob> &existingBlobs, std::vector<Blob> &currentFrameBlobs) {
 
-    for (auto &existingBlob : existingBlobs) {
+	for(unsigned i = 0; i<existingBlobs.size(); i++)
+	{
+        existingBlobs[i].blnCurrentMatchFoundOrNewBlob = false;
 
-        existingBlob.blnCurrentMatchFoundOrNewBlob = false;
-
-        existingBlob.predictNextPosition();
+        existingBlobs[i].predictNextPosition();
     }
 
-    for (auto &currentFrameBlob : currentFrameBlobs) {
-
+    
+	for (unsigned int j = 0; j < currentFrameBlobs.size(); j ++)
+	{
         int intIndexOfLeastDistance = 0;
         double dblLeastDistance = 100000.0;
 
@@ -219,7 +236,7 @@ void matchCurrentFrameBlobsToExistingBlobs(std::vector<Blob> &existingBlobs, std
 
             if (existingBlobs[i].blnStillBeingTracked == true) {
 
-                double dblDistance = distanceBetweenPoints(currentFrameBlob.centerPositions.back(), existingBlobs[i].predictedNextPosition);
+                double dblDistance = distanceBetweenPoints(currentFrameBlobs[j].centerPositions.back(), existingBlobs[i].predictedNextPosition);
 
                 if (dblDistance < dblLeastDistance) {
                     dblLeastDistance = dblDistance;
@@ -228,23 +245,24 @@ void matchCurrentFrameBlobsToExistingBlobs(std::vector<Blob> &existingBlobs, std
             }
         }
 
-        if (dblLeastDistance < currentFrameBlob.dblCurrentDiagonalSize * 0.5) {
-            addBlobToExistingBlobs(currentFrameBlob, existingBlobs, intIndexOfLeastDistance);
+        if (dblLeastDistance < currentFrameBlobs[j].dblCurrentDiagonalSize * 0.5) {
+            addBlobToExistingBlobs(currentFrameBlobs[j], existingBlobs, intIndexOfLeastDistance);
         }
         else {
-            addNewBlob(currentFrameBlob, existingBlobs);
+            addNewBlob(currentFrameBlobs[j], existingBlobs);
         }
 
     }
 
-    for (auto &existingBlob : existingBlobs) {
+	for (unsigned int i=0; i < existingBlobs.size(); i++)
+	{
 
-        if (existingBlob.blnCurrentMatchFoundOrNewBlob == false) {
-            existingBlob.intNumOfConsecutiveFramesWithoutAMatch++;
+        if (existingBlobs[i].blnCurrentMatchFoundOrNewBlob == false) {
+            existingBlobs[i].intNumOfConsecutiveFramesWithoutAMatch++;
         }
 
-        if (existingBlob.intNumOfConsecutiveFramesWithoutAMatch >= 5) {
-            existingBlob.blnStillBeingTracked = false;
+        if (existingBlobs[i].intNumOfConsecutiveFramesWithoutAMatch >= 5) {
+            existingBlobs[i].blnStillBeingTracked = false;
         }
 
     }
@@ -280,7 +298,7 @@ double distanceBetweenPoints(cv::Point point1, cv::Point point2) {
     int intX = abs(point1.x - point2.x);
     int intY = abs(point1.y - point2.y);
 
-    return(sqrt(pow(intX, 2) + pow(intY, 2)));
+    return(sqrt(std::pow(double(intX), 2) + std::pow(double(intY), 2)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -289,7 +307,7 @@ void drawAndShowContours(cv::Size imageSize, std::vector<std::vector<cv::Point> 
 
     cv::drawContours(image, contours, -1, SCALAR_WHITE, -1);
 
-    cv::imshow(strImageName, image);
+    ///////cv::imshow(strImageName, image);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,29 +316,32 @@ void drawAndShowContours(cv::Size imageSize, std::vector<Blob> blobs, std::strin
     cv::Mat image(imageSize, CV_8UC3, SCALAR_BLACK);
 
     std::vector<std::vector<cv::Point> > contours;
-
-    for (auto &blob : blobs) {
-        if (blob.blnStillBeingTracked == true) {
-            contours.push_back(blob.currentContour);
+ 
+	for (unsigned int i = 0; i < blobs.size(); i++)
+	{
+        if (blobs[i].blnStillBeingTracked == true) {
+            contours.push_back(blobs[i].currentContour);
         }
     }
 
     cv::drawContours(image, contours, -1, SCALAR_WHITE, -1);
 
-    cv::imshow(strImageName, image);
+    ///////////cv::imshow(strImageName, image);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 bool checkIfBlobsCrossedTheLine(std::vector<Blob> &blobs, int &intHorizontalLinePosition, int &carCount) {
     bool blnAtLeastOneBlobCrossedTheLine = false;
 
-    for (auto blob : blobs) {
+    //for (auto blob : blobs) 
+	for (unsigned int i = 0; i < blobs.size(); i++)
+	{
 
-        if (blob.blnStillBeingTracked == true && blob.centerPositions.size() >= 2) {
-            int prevFrameIndex = (int)blob.centerPositions.size() - 2;
-            int currFrameIndex = (int)blob.centerPositions.size() - 1;
+        if (blobs[i].blnStillBeingTracked == true && blobs[i].centerPositions.size() >= 2) {
+            int prevFrameIndex = (int)blobs[i].centerPositions.size() - 2;
+            int currFrameIndex = (int)blobs[i].centerPositions.size() - 1;
 
-            if (blob.centerPositions[prevFrameIndex].y > intHorizontalLinePosition && blob.centerPositions[currFrameIndex].y <= intHorizontalLinePosition) {
+            if (blobs[i].centerPositions[prevFrameIndex].y > intHorizontalLinePosition && blobs[i].centerPositions[currFrameIndex].y <= intHorizontalLinePosition) {
                 carCount++;
                 blnAtLeastOneBlobCrossedTheLine = true;
             }
@@ -341,9 +362,9 @@ void drawBlobInfoOnImage(std::vector<Blob> &blobs, cv::Mat &imgFrame2Copy) {
 
             int intFontFace = CV_FONT_HERSHEY_SIMPLEX;
             double dblFontScale = blobs[i].dblCurrentDiagonalSize / 60.0;
-            int intFontThickness = (int)std::round(dblFontScale * 1.0);
+            int intFontThickness = (int)round(dblFontScale * 1.0);
 
-            cv::putText(imgFrame2Copy, std::to_string(i), blobs[i].centerPositions.back(), intFontFace, dblFontScale, SCALAR_GREEN, intFontThickness);
+            cv::putText(imgFrame2Copy, std::to_string(static_cast<long long>(i)), blobs[i].centerPositions.back(), intFontFace, dblFontScale, SCALAR_GREEN, intFontThickness);
         }
     }
 }
@@ -353,25 +374,21 @@ void drawCarCountOnImage(int &carCount, cv::Mat &imgFrame2Copy) {
 
     int intFontFace = CV_FONT_HERSHEY_SIMPLEX;
     double dblFontScale = (imgFrame2Copy.rows * imgFrame2Copy.cols) / 300000.0;
-    int intFontThickness = (int)std::round(dblFontScale * 1.5);
+    int intFontThickness = (int)round(dblFontScale * 1.5);
 
-    cv::Size textSize = cv::getTextSize(std::to_string(carCount), intFontFace, dblFontScale, intFontThickness, 0);
+    cv::Size textSize = cv::getTextSize(std::to_string(static_cast<long long>(carCount)), intFontFace, dblFontScale, intFontThickness, 0);
 
     cv::Point ptTextBottomLeftPosition;
 
     ptTextBottomLeftPosition.x = imgFrame2Copy.cols - 1 - (int)((double)textSize.width * 1.25);
     ptTextBottomLeftPosition.y = (int)((double)textSize.height * 1.25);
 
-    cv::putText(imgFrame2Copy, std::to_string(carCount), ptTextBottomLeftPosition, intFontFace, dblFontScale, SCALAR_GREEN, intFontThickness);
+    cv::putText(imgFrame2Copy, std::to_string(static_cast<long long>(carCount)), ptTextBottomLeftPosition, intFontFace, dblFontScale, SCALAR_GREEN, intFontThickness);
 
 }
 
-
-
-
-
-
-
-
-
-
+///////////////////////////////////////////////////////////////////////////////////////////////////
+double round(double number)
+{
+    return number < 0.0 ? ceil(number - 0.5) : floor(number + 0.5);
+}
