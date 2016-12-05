@@ -187,7 +187,7 @@ int main( int argc, char** argv){
 
 		cv::imshow("imgFrame2Copy", imgFrame2Copy);
 		//cv::imshow("video de entrada",imgFrame2);
-        cv::waitKey(10);                 // uncomment this line to go frame by frame for debugging
+        //cv::waitKey(10);                 // uncomment this line to go frame by frame for debugging
         
                 // now we prepare for the next iteration
 
