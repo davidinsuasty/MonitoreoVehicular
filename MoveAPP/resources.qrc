@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>play.ico</file>
+        <file>stop.png</file>
+        <file>pause.png</file>
+        <file>report.png</file>
+        <file>move.ico</file>
+        <file>search.png</file>
+    </qresource>
+</RCC>
