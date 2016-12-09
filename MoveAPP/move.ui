@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>994</width>
-    <height>652</height>
+    <height>678</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -274,7 +274,7 @@ background-color: gray;
       <x>348</x>
       <y>528</y>
       <width>297</width>
-      <height>69</height>
+      <height>97</height>
      </rect>
     </property>
     <property name="font">
@@ -337,6 +337,19 @@ background-color: gray;
       <string>O-E</string>
      </property>
     </widget>
+    <widget class="QRadioButton" name="rbtn_param_SN_2">
+     <property name="geometry">
+      <rect>
+       <x>48</x>
+       <y>56</y>
+       <width>73</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>SN-NS</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QLabel" name="txtMensajes">
     <property name="geometry">
@@ -361,7 +374,7 @@ background-color: gray;
      <rect>
       <x>340</x>
       <y>12</y>
-      <width>145</width>
+      <width>461</width>
       <height>21</height>
      </rect>
     </property>

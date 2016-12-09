@@ -21,6 +21,7 @@ move::move(QWidget *parent) :
     firstFrame = true;
 
     carCount = 0;
+    carCount2 = 0;
     pressPlay = 0;
     pressPause = 0;
     initialize();
@@ -76,7 +77,7 @@ void move::initialize()
     ui->btnFilePath->setIcon(search_icon);
     ui->btnFilePath->setIconSize(QSize(20,20));
 
-    ui->rbtn_param_SN->setChecked(true);
+    ui->rbtn_param_SN_2->setChecked(true);
 
 }
 
@@ -101,14 +102,11 @@ void move::on_btnPlaynPause_clicked()
     {
         int value = ui->selectPort->value();
         if (value == 0)
-        {
-            cap.open("D:/GoogleDrive/dataset/manizales_batallon_8am.mp4");
-            cap.set(CV_CAP_PROP_POS_MSEC,149000);
-        }
+            cap.open(value);
         else if (value == 1)
             cap.open("http://200.6.188.43:80/mjpg/video.mjpg");
         else if (value == 2)
-            cap.open(0);
+            cap.open(value);
 
         ui->selectPort->setEnabled(false);
         if (cap.isOpened()== false)
@@ -189,6 +187,7 @@ void move::on_btnStop_clicked()
     pressPlay = 0;
     ui->txtMensajes->setText(QString(" "));
     ui->textCarCount->setText(QString("VEHICULOS:  0"));
+    ui->rbtn_param_SN_2->setChecked(true);
     ui->VideoPlayer->clear();
     ui->VideoPlayer->setStyleSheet("background-color:gray");
     if (ui->selectSource->currentIndex() == 0)
@@ -230,7 +229,7 @@ void move::on_selectSource_currentIndexChanged(const QString &arg1)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void move::on_btnFilePath_clicked()
 {
-    QString FileName = QFileDialog::getOpenFileName(this, tr("Abrir archivo"),"/path/to/file/",tr("Archivo de video(*.avi);;mp4(*.mp4)"));
+    QString FileName = QFileDialog::getOpenFileName(this, tr("Abrir archivo"),"/path/to/file/",tr("Archivo MP4(*.mp4);;Archivo AVI(*.avi)"));
     ui->filePath->setText(FileName);
 }
 
@@ -274,7 +273,7 @@ void move::drawContours(cv::Size imageSize, std::vector<Tracker> regions)
     }
 
     cv::drawContours(image, contours, -1, SCALAR_RED, -1);
-    cv::imshow("hull regions",image);
+    cv::imshow("selected regions",image);
     cv::waitKey(0);
 }
 
@@ -294,9 +293,11 @@ double move::round(double number)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-bool move::crossCountingLine(std::vector<Tracker> &regions, int posCountingline, int &carCount)
+bool move::crossCountingLine(std::vector<Tracker> &regions, int posCountingline, int &carCount, int &carCount2)
 {
     bool crossTheLine = false;
+
+    ui->rbtn_param_SN_2->isChecked();
 
     for (unsigned int i = 0; i < regions.size(); i++)
     {
@@ -313,9 +314,19 @@ bool move::crossCountingLine(std::vector<Tracker> &regions, int posCountingline,
             {
                 if (regions[i].centerPositions[lastIdx].y > posCountingline &&
                     regions[i].centerPositions[currIdx].y <= posCountingline &&
-                        regions[i].opticalFlow < 0)
+                        regions[i].opticalFlow < 0 &&
+                        (ui->rbtn_param_SN->isChecked() ||ui->rbtn_param_SN_2->isChecked()))
                 {
                     carCount++;
+                    crossTheLine = true;
+                }
+
+                if (regions[i].centerPositions[lastIdx].y < posCountingline &&
+                    regions[i].centerPositions[currIdx].y >= posCountingline &&
+                        regions[i].opticalFlow > 0 &&
+                        (ui->rbtn_param_NS->isChecked() ||ui->rbtn_param_SN_2->isChecked()))
+                {
+                    carCount2++;
                     crossTheLine = true;
                 }
             }
@@ -327,9 +338,12 @@ bool move::crossCountingLine(std::vector<Tracker> &regions, int posCountingline,
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void move::showCarCount(int &carCount)
+void move::showCarCount(int &carCount, int &carCount2)
 {
-    ui->textCarCount->setText(QString("VEHICULOS:  ")+QString::number(carCount));
+     ui->textCarCount->setText(QString("VEHICULOS || S-N: ")+QString::number(carCount)
+                               +QString("  N-S: ")+QString::number(carCount2)
+                               +QString("  Total: ")+QString::number(carCount + carCount2));
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -399,9 +413,9 @@ void move::setCountingLine()
         countingLine[1].y = linePosition;
 
     }
-    else if (ui->rbtn_param_NS->isChecked())
+    else if (ui->rbtn_param_NS->isChecked() || ui->rbtn_param_SN_2->isChecked())
     {
-        linePosition = (int)round((double)currentFrame.rows*0.6);
+        linePosition = (int)round((double)currentFrame.rows*0.74);
         countingLine[0].x = 0;
         countingLine[0].y = linePosition;
 
@@ -496,14 +510,14 @@ void move::frame2screen()
     setCountingLine();
 
     //drawContours(currentFrame.size(),selectedregions);
-    bool crossTheLine = crossCountingLine(selectedregions, linePosition, carCount);
+    bool crossTheLine = crossCountingLine(selectedregions, linePosition, carCount, carCount2);
 
     if (crossTheLine)
         cv::line(currentFrame, countingLine[0], countingLine[1], SCALAR_GREEN);
     else
         cv::line(currentFrame, countingLine[0], countingLine[1], SCALAR_RED);
 
-    showCarCount(carCount);
+    showCarCount(carCount, carCount2);
 
     cv::cvtColor(currentFrame, currentFrame, CV_BGR2RGB);
     cv::resize(currentFrame, currentFrameResized,cv::Size(640, 480));

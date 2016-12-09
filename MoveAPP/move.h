@@ -23,7 +23,7 @@ public:
     void addRegion2AllRegions(Tracker &currentFrameRegion, std::vector<Tracker> &existingRegions, int idx);
     void addNewRegion(Tracker &currentFrameRegion, std::vector<Tracker> &existingRegions);
     void drawContours(cv::Size imageSize, std::vector<Tracker> regions);   
-    void showCarCount(int &carCount);
+    void showCarCount(int &carCount, int &carCount2);
     void trackingRegion(std::vector<Tracker> &existingRegions, std::vector<Tracker> &currentFrameRegion);
     void frame2screen();
     void setCountingLine();
@@ -31,7 +31,7 @@ public:
     double euclideanDistance(cv::Point point1, cv::Point point2);
     double round(double number);
 
-    bool crossCountingLine(std::vector<Tracker> &regions, int posCountingline, int &carCount);
+    bool crossCountingLine(std::vector<Tracker> &regions, int posCountingline, int &carCount, int &carCount2);
 
 private slots:
     void showTime();
@@ -49,6 +49,7 @@ private:
     int pressPlay;
     int pressPause;
     int carCount;
+    int carCount2;
     int linePosition;
 
     bool firstFrame;
